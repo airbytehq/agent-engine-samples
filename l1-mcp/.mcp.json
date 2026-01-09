@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "airbyte-agent-mcp": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/Users/alexcuoci/work/sonar/airbyte-agent-connectors/airbyte-agent-mcp",
+        "run",
+        "airbyte_agent_mcp",
+        "/Users/alexcuoci/work/sonar/example-api-tool-setup/l1-mcp/configured_connectors.yaml",
+        "/Users/alexcuoci/work/sonar/example-api-tool-setup/.env"
+      ],
+      "env": {}
+    }
+  }
+}
