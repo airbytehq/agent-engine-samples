@@ -21,16 +21,8 @@ fi
 PYTHON_CMD=""
 if command -v python3.12 &> /dev/null; then
     PYTHON_CMD="python3.12"
-elif command -v python3.11 &> /dev/null; then
-    PYTHON_CMD="python3.11"
-elif command -v python3.10 &> /dev/null; then
-    PYTHON_CMD="python3.10"
 else
-    echo "Error: Python 3.10 or higher is required for pydantic-ai"
-    echo "Current python3 version: $(python3 --version)"
-    echo "Please install Python 3.10+ or use pyenv:"
-    echo "  pyenv install 3.12"
-    echo "  pyenv local 3.12"
+    echo "Error: Python 3.12+ required. Please install Python 3.12 or higher"
     exit 1
 fi
 

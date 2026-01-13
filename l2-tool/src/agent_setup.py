@@ -11,7 +11,6 @@ from pydantic_ai import Agent
 from pydantic_ai.models.anthropic import AnthropicModel
 from langsmith import traceable
 from airbyte_agent_gong import GongConnector
-from airbyte_agent_gong._vendored.connector_sdk.decorators import airbyte_description
 from airbyte_agent_hubspot import HubspotConnector
 
 

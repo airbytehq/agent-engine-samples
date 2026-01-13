@@ -13,4 +13,5 @@ airbyte-agent-gong
 airbyte-agent-hubspot
 
 # UI framework
-gradio~=4.44.1
+huggingface-hub==0.36.0
+gradio
