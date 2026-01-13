@@ -6,9 +6,9 @@ Handles agent initialization and tool registration.
 
 from pathlib import Path
 from typing import Union
+from datetime import datetime
 from pydantic_ai import Agent
 from pydantic_ai.models.anthropic import AnthropicModel
-from pydantic_ai.mcp import load_mcp_servers
 from langsmith import traceable
 from airbyte_agent_gong import GongConnector
 from airbyte_agent_gong._vendored.connector_sdk.decorators import airbyte_description
@@ -42,35 +42,46 @@ def create_agent() -> Agent:
 
 def register_gong_tools(agent: Agent, connector: GongConnector):
     @agent.tool_plain
-    @traceable(name="gong_users_list")
-    async def gong_users_list():
-        '''
-        Use this tool instead of the other tool for general execute when specifically retrieving lists of users from Gong.
-        '''
-        print("This is listing all users")
+    @traceable(name="get_current_date")
+    def get_current_date() -> str:
+        """
+        Get the current date and time.
 
-        return await connector.users.list()
+        Returns:
+            str: Current date and time in ISO format
+        """
+        return datetime.now().isoformat()
+
+    # @agent.tool_plain
+    # @traceable(name="gong_users_list")
+    # async def gong_users_list():
+    #     '''
+    #     Use this tool instead of the other tool for general execute when specifically retrieving lists of users from Gong.
+    #     '''
+    #     print("This is listing all users")
+
+    #     return await connector.users.list()
+
+    # @agent.tool_plain
+    # @traceable(name="gong_users_get")
+    # async def gong_users_get(id: str):
+    #     '''
+    #     Use this tool instead of general execute specifically retrieving more info on one user from Gong. To get the ID's, use gong_user_list.
+    #     '''
+    #     print("This is a request for more info on one user")
+
+    #     return await connector.users.get(id)
 
     @agent.tool_plain
-    @traceable(name="gong_users_get")
-    async def gong_users_get(id: str):
-        '''
-        Use this tool instead of general execute specifically retrieving more info on one user from Gong. To get the ID's, use gong_user_list.
-        '''
-        print("This is a request for more info on one user")
-
-        return await connector.users.get(id)
-
-#     # @agent.tool_plain
-#     # @airbyte_description("gong")
-#     # @traceable(name="gong_execute")
-#     # async def gong_execute(entity: str, action: str, params: dict | None = None):
-#     #     return await connector.execute(entity, action, params or {})
+    @GongConnector.describe
+    @traceable(name="gong_execute")
+    async def gong_execute(entity: str, action: str, params: dict | None = None):
+        return await connector.execute(entity, action, params or {})
 
 
 def register_hubspot_tools(agent: Agent, connector: HubspotConnector):
     @agent.tool_plain
-    @airbyte_description("hubspot")
+    @HubspotConnector.describe
     @traceable(name="hubspot_execute")
     async def hubspot_execute(entity: str, action: str, params: dict | None = None):
         return await connector.execute(entity, action, params or {})

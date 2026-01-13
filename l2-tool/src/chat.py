@@ -68,7 +68,7 @@ demo = gr.ChatInterface(
         "List all users in my Gong organization",
         "Show me call transcripts from last week",
         "List all contacts in HubSpot",
-        "Find companies with domain example.com"
+        "Find companies with domain invesco.com"
     ]
 )
 
