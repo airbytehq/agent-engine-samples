@@ -1,8 +1,0 @@
-connectors:
-  - id: gong
-    type: local
-    connector_name: gong
-    description: "My Gong API connector"
-    secrets:
-      access_key: GONG_ACCESS_KEY
-      access_key_secret: GONG_ACCESS_KEY_SECRET

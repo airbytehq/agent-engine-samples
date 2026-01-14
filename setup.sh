@@ -17,33 +17,27 @@ if [ ! -f requirements.txt ]; then
     exit 1
 fi
 
-# Check Python version
-PYTHON_CMD=""
-if command -v python3.12 &> /dev/null; then
-    PYTHON_CMD="python3.12"
-else
-    echo "Error: Python 3.12+ required. Please install Python 3.12 or higher"
+# Check if uv is installed
+if ! command -v uv &> /dev/null; then
+    echo "Error: uv is not installed"
+    echo "Please install uv: curl -LsSf https://astral.sh/uv/install.sh | sh"
     exit 1
 fi
 
-echo "Using Python: $PYTHON_CMD ($(${PYTHON_CMD} --version))"
+echo "Using uv with Python 3.13"
 
-# Create virtual environment
-echo "Creating virtual environment..."
-$PYTHON_CMD -m venv venv
+# Create virtual environment with uv
+echo "Creating virtual environment with uv..."
+uv venv --python 3.13
 
 # Activate virtual environment
 echo "Activating virtual environment..."
-source venv/bin/activate
-
-# Upgrade pip
-echo "Upgrading pip..."
-pip install --upgrade pip
+source .venv/bin/activate
 
 # Install dependencies
 echo ""
 echo "Installing dependencies from requirements.txt..."
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 
 echo ""
 echo "=================================="

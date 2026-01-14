@@ -17,10 +17,10 @@ if [ ! -f ../.env ]; then
 fi
 
 # Activate shared venv from project root
-if [ -d "../venv" ]; then
-    source ../venv/bin/activate
+if [ -d "../.venv" ]; then
+    source ../.venv/bin/activate
 else
-    echo "Error: Shared venv not found at ../venv/"
+    echo "Error: Shared venv not found at ../.venv/"
     echo "Please run: cd .. && ./setup.sh"
     exit 1
 fi

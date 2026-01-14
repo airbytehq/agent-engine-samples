@@ -40,8 +40,8 @@ demo = gr.ChatInterface(
     title="AI Agent Chat",
     description="Ask me about anything you are looking to learn more about.",
     examples=[
-        "List all users in my Gong organization",
-        "Show me call transcripts from last week",
+        "List 10 users in my Gong organization",
+        "Show me a call transcript from last week",
         "List all contacts in HubSpot",
         "Find companies with domain invesco.com"
     ]

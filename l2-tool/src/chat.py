@@ -1,12 +1,9 @@
 """Gradio chat interface for Pydantic AI Agent with Gong and HubSpot Connectors"""
 
-import os
 from dotenv import load_dotenv
 import gradio as gr
 
-from airbyte_agent_gong import GongConnector
-from airbyte_agent_hubspot import HubspotConnector
-from src.agent_setup import create_agent, register_hubspot_tools, register_gong_tools
+from src.agent_setup import create_agent, register_hubspot_tools, register_gong_tools, register_generic_tools
 
 # Load environment variables
 load_dotenv()
@@ -22,29 +19,11 @@ async def chat(message, history):
 
     # Lazy initialization on first message
     if agent is None:
-        
-        # Get Airbyte credentials from environment
-        airbyte_client_id = os.getenv("AIRBYTE_CLIENT_ID")
-        airbyte_client_secret = os.getenv("AIRBYTE_CLIENT_SECRET")
-        external_user_id = os.getenv("EXTERNAL_USER_ID", "customer-workspace")
-
-        # Initialize connectors
-        gong_connector = GongConnector(
-            external_user_id=external_user_id,
-            airbyte_client_id=airbyte_client_id,
-            airbyte_client_secret=airbyte_client_secret
-        )
-
-        hubspot_connector = HubspotConnector(
-            external_user_id=external_user_id,
-            airbyte_client_id=airbyte_client_id,
-            airbyte_client_secret=airbyte_client_secret
-        )
-
         # Create and configure the agent
         agent = create_agent()
-        register_hubspot_tools(agent, hubspot_connector)
-        register_gong_tools(agent, gong_connector)
+        register_generic_tools(agent)
+        register_hubspot_tools(agent)
+        register_gong_tools(agent)
 
     try:
         # Run agent with message history
@@ -65,8 +44,8 @@ demo = gr.ChatInterface(
     title="AI Agent Chat",
     description="Ask me about anything you are looking to learn more about.",
     examples=[
-        "List all users in my Gong organization",
-        "Show me call transcripts from last week",
+        "List 10 users in my Gong organization",
+        "Show me a call transcript from last week",
         "List all contacts in HubSpot",
         "Find companies with domain invesco.com"
     ]
