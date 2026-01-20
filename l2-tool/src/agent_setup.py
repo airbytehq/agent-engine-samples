@@ -68,27 +68,34 @@ def register_gong_tools(agent: Agent):
         airbyte_client_secret=airbyte_client_secret
     )
 
-    # @agent.tool_plain
-    # @traceable(name="gong_users_list")
-    # async def gong_users_list():
-    #     '''
-    #     Use this tool instead of the other tool for general execute when specifically retrieving lists of users from Gong.
-    #     '''
-    #     return await connector.users.list()
-
-    # @agent.tool_plain
-    # @traceable(name="gong_users_get")
-    # async def gong_users_get(id: str):
-    #     '''
-    #     Use this tool instead of general execute specifically retrieving more info on one user from Gong. To get the ID's, use gong_user_list.
-    #     '''
-    #     return await connector.users.get(id)
-
     @agent.tool_plain
     @GongConnector.describe
     @traceable(name="gong_execute")
     async def gong_execute(entity: str, action: str, params: dict | None = None):
         return await connector.execute(entity, action, params or {})
+    
+    @agent.tool_plain
+    @traceable(name="gong_search")
+    async def gong_search(entity: str):
+        """
+        You can use this only to list Gong calls from last week using the entity cache, which is better than a direct query for this specific action.
+        Returns:
+            dict: The search results from the connector
+        """
+        return await connector.execute("calls_extensive", "search",
+            {
+                "query": {
+                    "filter": {
+                        "and": [
+                            {"gte": {"startdatetime": "2026-01-09T00:00:00+00:00"}},
+                            {"lt": {"startdatetime": "2026-01-16T00:00:00+00:00"}},
+                            {"any": {"parties": {"eq": {"userId": "3231305625784464269"}}}}
+                        ]
+                    },
+                    "sort": [{"startdatetime": "desc"}]
+                },
+                "limit": 50
+            })
 
 ########### Add Hubspot Connector
 
@@ -110,7 +117,7 @@ def register_hubspot_tools(agent: Agent):
     @traceable(name="hubspot_execute")
     async def hubspot_execute(entity: str, action: str, params: dict | None = None):
         return await connector.execute(entity, action, params or {})
-    
+
 ############### 
 
 async def log_tool_calls(ctx, events):
