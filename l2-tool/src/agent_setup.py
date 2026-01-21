@@ -8,13 +8,22 @@ import os
 import json
 from pathlib import Path
 from datetime import datetime
+from dotenv import load_dotenv
 from pydantic_ai import Agent
 from pydantic_ai.models.anthropic import AnthropicModel
 from pydantic_ai.messages import FunctionToolCallEvent
 from langsmith import traceable
 from airbyte_agent_gong import GongConnector
 from airbyte_agent_hubspot import HubspotConnector
+from airbyte_agent_linear import LinearConnector
 
+# Load environment variables
+load_dotenv()
+
+# Airbyte configuration constants
+AIRBYTE_CLIENT_ID = os.getenv("AIRBYTE_CLIENT_ID")
+AIRBYTE_CLIENT_SECRET = os.getenv("AIRBYTE_CLIENT_SECRET")
+EXTERNAL_USER_ID = os.getenv("EXTERNAL_USER_ID", "customer-workspace")
 
 def _load_system_prompt() -> str:
     """Load system prompt from file."""
@@ -56,16 +65,11 @@ def register_generic_tools(agent: Agent):
 ########### Add Gong Connector
 
 def register_gong_tools(agent: Agent):
-    # Get Airbyte credentials from environment
-    airbyte_client_id = os.getenv("AIRBYTE_CLIENT_ID")
-    airbyte_client_secret = os.getenv("AIRBYTE_CLIENT_SECRET")
-    external_user_id = os.getenv("EXTERNAL_USER_ID", "customer-workspace")
-
     # Initialize connector
     connector = GongConnector(
-        external_user_id=external_user_id,
-        airbyte_client_id=airbyte_client_id,
-        airbyte_client_secret=airbyte_client_secret
+        external_user_id=EXTERNAL_USER_ID,
+        airbyte_client_id=AIRBYTE_CLIENT_ID,
+        airbyte_client_secret=AIRBYTE_CLIENT_SECRET
     )
 
     @agent.tool_plain
@@ -96,20 +100,31 @@ def register_gong_tools(agent: Agent):
                 },
                 "limit": 50
             })
+    
+########### Add Linear Connector
+
+def register_linear_tools(agent: Agent):
+    connector = LinearConnector(
+        external_user_id=EXTERNAL_USER_ID,
+        airbyte_client_id=AIRBYTE_CLIENT_ID,
+        airbyte_client_secret=AIRBYTE_CLIENT_SECRET
+    )
+
+    @agent.tool_plain
+    @LinearConnector.describe
+    @traceable(name="linear_execute")
+    async def linear_execute(entity: str, action: str, params: dict | None = None):
+        return await connector.execute(entity, action, params or {})
+
 
 ########### Add Hubspot Connector
 
 def register_hubspot_tools(agent: Agent):
-    # Get Airbyte credentials from environment
-    airbyte_client_id = os.getenv("AIRBYTE_CLIENT_ID")
-    airbyte_client_secret = os.getenv("AIRBYTE_CLIENT_SECRET")
-    external_user_id = os.getenv("EXTERNAL_USER_ID", "customer-workspace")
-
     # Initialize connector
     connector = HubspotConnector(
-        external_user_id=external_user_id,
-        airbyte_client_id=airbyte_client_id,
-        airbyte_client_secret=airbyte_client_secret
+        external_user_id=EXTERNAL_USER_ID,
+        airbyte_client_id=AIRBYTE_CLIENT_ID,
+        airbyte_client_secret=AIRBYTE_CLIENT_SECRET
     )
 
     @agent.tool_plain

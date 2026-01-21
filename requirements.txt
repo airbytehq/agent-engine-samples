@@ -11,6 +11,7 @@ langsmith~=0.1.147
 # Airbyte connectors
 airbyte-agent-gong
 airbyte-agent-hubspot
+airbyte_agent_linear
 
 # UI framework
 huggingface-hub==0.36.0

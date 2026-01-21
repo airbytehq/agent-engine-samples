@@ -3,7 +3,7 @@
 from dotenv import load_dotenv
 import gradio as gr
 
-from src.agent_setup import create_agent, register_hubspot_tools, register_gong_tools, register_generic_tools
+from src.agent_setup import create_agent, register_hubspot_tools, register_gong_tools, register_generic_tools, register_linear_tools
 
 # Load environment variables
 load_dotenv()
@@ -24,6 +24,7 @@ async def chat(message, history):
         register_generic_tools(agent)
         register_hubspot_tools(agent)
         register_gong_tools(agent)
+        register_linear_tools(agent)
 
     try:
         # Run agent with message history
