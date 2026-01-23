@@ -16,3 +16,6 @@ airbyte_agent_linear
 # UI framework
 huggingface-hub==0.36.0
 gradio
+
+# HTTP client for Airbyte API
+httpx>=0.27.0

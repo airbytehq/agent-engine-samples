@@ -3,7 +3,7 @@
 from dotenv import load_dotenv
 import gradio as gr
 
-from src.agent_setup import create_agent, register_hubspot_tools, register_linear_tools, register_gong_tools, register_generic_tools
+from src.agent_setup import create_agent, create_deps, register_tools
 from src.airbyte_widget import get_widget_token, generate_widget_html, AirbyteWidgetError
 
 # Load environment variables
@@ -11,25 +11,24 @@ load_dotenv()
 
 # Global state (initialized on first message)
 agent = None
+deps = None
 message_history = []
 
 
 async def chat(message, history):
     """Handle chat messages with the agent."""
-    global agent, message_history
+    global agent, deps, message_history
 
     # Lazy initialization on first message
     if agent is None:
         # Create and configure the agent
         agent = create_agent()
-        register_hubspot_tools(agent)
-        register_linear_tools(agent)
-        register_gong_tools(agent)
-        register_generic_tools(agent)
+        deps = create_deps()
+        register_tools(agent)
 
     try:
-        # Run agent with message history
-        result = await agent.run(message, message_history=message_history)
+        # Run agent with message history and dependencies
+        result = await agent.run(message, message_history=message_history, deps=deps)
 
         # Update message history with the full conversation
         message_history = result.all_messages()

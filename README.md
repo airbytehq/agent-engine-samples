@@ -1,6 +1,6 @@
 # Example API Tool Setup
 
-This project demonstrates two approaches for integrating external API tools with Pydantic AI agents.
+This project demonstrates three approaches for integrating external API tools with Pydantic AI agents.
 
 ## Project Structure
 
@@ -13,12 +13,21 @@ Uses **Model Context Protocol (MCP) servers** for tool integration. Tools are lo
 - Configuration-driven approach
 
 ### l2-tool/ (Level 2 - Direct Tool Integration)
-Directly initializes and registers connector tools within the agent code.
+Directly initializes and registers connector tools within the agent code using closures.
 
 **Key Features:**
 - In-memory tool registration
-- Direct connector initialization
+- Direct connector initialization via closures
 - Programmatic approach
+
+### l3-tool-di/ (Level 3 - Dependency Injection)
+Uses **Pydantic-AI's built-in dependency injection** framework for cleaner tool integration.
+
+**Key Features:**
+- Dependencies managed via `AgentDeps` dataclass
+- Tools receive connectors via `RunContext[AgentDeps]`
+- Centralized dependency creation with `create_deps()` factory
+- Better testability and separation of concerns
 
 ## Setup
 
@@ -41,7 +50,7 @@ Directly initializes and registers connector tools within the agent code.
    This will:
    - Create a shared `venv/` directory at the project root
    - Install all required dependencies
-   - Set up the environment for both l1-mcp and l2-tool
+   - Set up the environment for l1-mcp, l2-tool, and l3-tool-di
 
 ### Environment Configuration
 
@@ -61,7 +70,7 @@ Required environment variables:
 
 ## Running the Applications
 
-Both implementations use the same Gradio chat interface and can be run independently.
+All implementations use the same Gradio chat interface and can be run independently.
 
 ### Run l1-mcp (MCP Integration)
 ```bash
@@ -72,6 +81,12 @@ cd l1-mcp
 ### Run l2-tool (Direct Tools)
 ```bash
 cd l2-tool
+./run.sh
+```
+
+### Run l3-tool-di (Dependency Injection)
+```bash
+cd l3-tool-di
 ./run.sh
 ```
 

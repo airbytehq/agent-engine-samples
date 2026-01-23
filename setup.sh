@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Shared Dependencies Setup
-# Creates a shared virtual environment for both l1-mcp and l2-tool
+# Creates a shared virtual environment for l1-mcp, l2-tool, and l3-tool-di
 
 set -e
 
@@ -45,8 +45,9 @@ echo "Setup Complete!"
 echo "=================================="
 echo ""
 echo "Next steps:"
-echo "  - To run l1-mcp (MCP integration):  cd l1-mcp && ./run.sh"
-echo "  - To run l2-tool (Direct tools):    cd l2-tool && ./run.sh"
+echo "  - To run l1-mcp (MCP integration):     cd l1-mcp && ./run.sh"
+echo "  - To run l2-tool (Direct tools):       cd l2-tool && ./run.sh"
+echo "  - To run l3-tool-di (Dependency Inj):  cd l3-tool-di && ./run.sh"
 echo ""
-echo "Note: Make sure you have a .env file configured in each directory."
+echo "Note: Make sure you have a .env file configured at the project root."
 echo "=================================="
