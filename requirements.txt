@@ -1,5 +1,5 @@
 # Core AI framework - requires 1.0+ for load_mcp_servers function
-pydantic-ai-slim[anthropic,mcp]>=1.0
+pydantic-ai-slim[anthropic,mcp]~=1.44.0
 
 # API client - will be constrained by pydantic-ai-slim
 anthropic>=0.75.0
