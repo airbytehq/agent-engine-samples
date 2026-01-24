@@ -31,13 +31,6 @@ EXTERNAL_USER_ID = os.getenv("EXTERNAL_USER_ID", "customer-workspace")
 
 @dataclass
 class AgentDeps:
-    """
-    Dependencies container for the Pydantic AI agent.
-
-    Holds all connector instances that tools may need access to.
-    Optional connectors default to None for cases where not all
-    integrations are configured.
-    """
     gong: GongConnector | None = None
     hubspot: HubspotConnector | None = None
     linear: LinearConnector | None = None
@@ -46,19 +39,8 @@ class AgentDeps:
 def create_deps(
     include_gong: bool = True,
     include_hubspot: bool = True,
-    include_linear: bool = True
-) -> AgentDeps:
-    """
-    Create dependencies instance with configured connectors.
-
-    Args:
-        include_gong: Whether to initialize the Gong connector
-        include_hubspot: Whether to initialize the HubSpot connector
-        include_linear: Whether to initialize the Linear connector
-
-    Returns:
-        AgentDeps: Configured dependencies instance
-    """
+    include_linear: bool = True) -> AgentDeps:
+    
     gong = None
     hubspot = None
     linear = None
@@ -117,7 +99,6 @@ def register_tools(agent: Agent[AgentDeps, str]) -> None:
     # ============== Generic Tools ==============
 
     @agent.tool_plain
-    @traceable(name="get_current_date")
     def get_current_date() -> str:
         """
         Get the current date and time.

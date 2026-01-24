@@ -1,11 +1,11 @@
 # Core AI framework - requires 1.0+ for load_mcp_servers function
-pydantic-ai-slim[anthropic,mcp]~=1.44.0
+pydantic-ai~=1.46.0
 
 # API client - will be constrained by pydantic-ai-slim
 anthropic>=0.75.0
 
 # Utilities
-python-dotenv~=1.0.1
+python-dotenv>=1.1.0
 langsmith~=0.1.147
 
 # Airbyte connectors

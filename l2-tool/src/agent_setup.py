@@ -8,6 +8,7 @@ import os
 import json
 from pathlib import Path
 from datetime import datetime
+from typing import Literal
 from dotenv import load_dotenv
 from pydantic_ai import Agent
 from pydantic_ai.models.anthropic import AnthropicModel
@@ -72,7 +73,7 @@ def register_gong_tools(agent: Agent):
 
     @agent.tool_plain
     @GongConnector.describe
-    async def gong_execute(entity: str, action: str, params: dict | None = None):
+    async def gong_execute(entity: str, action: Literal["list", "get"], params: dict | None = None):
         return await connector.execute(entity, action, params or {})
 
     # @agent.tool_plain
