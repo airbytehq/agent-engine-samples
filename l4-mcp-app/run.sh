@@ -1,37 +1,32 @@
 #!/bin/bash
-
 # MCP Apps Chat Launcher
+# Full TypeScript implementation with MCP Apps host protocol
 
 set -e
 
-echo "=================================="
-echo "MCP Apps Chat Launcher"
-echo "=================================="
-echo ""
-
-# Navigate to the l4-mcp-app directory
 cd "$(dirname "$0")"
 
-# Check shared .env file
-if [ ! -f ../.env ]; then
-    echo "Error: .env file not found!"
-    echo "Please copy .env.example to .env in the project root and configure it"
-    exit 1
-fi
+echo "=================================="
+echo "MCP Apps Chat"
+echo "=================================="
 
-# Activate shared venv from project root
-if [ -d "../.venv" ]; then
-    source ../.venv/bin/activate
+# Load environment variables from parent directory
+if [ -f "../.env" ]; then
+    set -a
+    source "../.env"
+    set +a
 else
-    echo "Error: Shared venv not found at ../.venv/"
-    echo "Please run: cd .. && ./setup.sh"
-    exit 1
+    echo "Warning: .env file not found at ../.env"
+    echo "Please copy .env.example to .env and configure it"
 fi
 
-# Load environment variables
-export $(grep -v '^#' ../.env | xargs)
+# Install dependencies if needed
+if [ ! -d "node_modules" ]; then
+    echo "Installing dependencies..."
+    npm install
+fi
 
-# Build the widget MCP server if needed
+# Build widget-mcp-server if needed
 if [ ! -f "widget-mcp-server/dist/server.mjs" ]; then
     echo "Building widget-mcp-server..."
     cd widget-mcp-server
@@ -40,27 +35,13 @@ if [ ! -f "widget-mcp-server/dist/server.mjs" ]; then
     cd ..
 fi
 
-# Check dependencies
-echo "Checking dependencies..."
-python -c "import pydantic_ai" 2>/dev/null || {
-    echo "Error: pydantic-ai not installed"
-    echo "Please run: cd .. && ./setup.sh"
-    exit 1
-}
-
-python -c "import fastapi" 2>/dev/null || {
-    echo "Error: fastapi not installed"
-    echo "Please run: pip install fastapi uvicorn"
-    exit 1
-}
+# No need to build main server - using tsx to run TypeScript directly
 
 echo ""
-echo "Starting MCP Apps Chat..."
+echo "Starting MCP Apps Chat server..."
 echo "Available at: http://localhost:8000"
-echo ""
 echo "Press Ctrl+C to stop"
 echo "=================================="
 echo ""
 
-# Run the FastAPI app from within l4-mcp-app directory
-PYTHONPATH="$PWD:$PYTHONPATH" python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+npm run serve
