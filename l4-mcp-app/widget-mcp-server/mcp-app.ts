@@ -1,6 +1,6 @@
 import { App, applyDocumentTheme, applyHostStyleVariables } from "@modelcontextprotocol/ext-apps";
 
-// Declare the AirbyteEmbeddedWidget global (loaded from CDN in HTML)
+// Declare the AirbyteEmbeddedWidget global (loaded dynamically from CDN)
 declare const AirbyteEmbeddedWidget: new (config: {
   token: string;
   onEvent?: (event: unknown) => void;
@@ -8,6 +8,39 @@ declare const AirbyteEmbeddedWidget: new (config: {
   open: () => void;
   destroy?: () => void;
 };
+
+// CDN URL for the Airbyte Embedded Widget
+const AIRBYTE_WIDGET_CDN = "https://cdn.jsdelivr.net/npm/@airbyte-embedded/airbyte-embedded-widget@0.4.2";
+
+/**
+ * Dynamically load AirbyteEmbeddedWidget from CDN
+ * This is necessary because external <script src=""> tags don't work in srcdoc iframes
+ * (following the pattern from the official map-server MCP Apps example)
+ */
+async function loadAirbyteWidget(): Promise<void> {
+  // Check if already loaded
+  if (typeof AirbyteEmbeddedWidget !== "undefined") {
+    console.log("[Widget] AirbyteEmbeddedWidget already loaded");
+    return;
+  }
+
+  console.log("[Widget] Loading AirbyteEmbeddedWidget from CDN...");
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = AIRBYTE_WIDGET_CDN;
+    script.onload = () => {
+      console.log("[Widget] AirbyteEmbeddedWidget loaded successfully");
+      resolve();
+    };
+    script.onerror = () => {
+      const error = new Error("Failed to load AirbyteEmbeddedWidget from CDN");
+      console.error("[Widget]", error.message);
+      reject(error);
+    };
+    document.head.appendChild(script);
+  });
+}
 
 // Inject styles
 const style = document.createElement("style");
@@ -70,7 +103,7 @@ app.ontoolinput = () => {
 };
 
 // Called when the host returns the tool result - this is the standard MCP Apps pattern
-app.ontoolresult = (result) => {
+app.ontoolresult = async (result) => {
   console.log("[Handler] ontoolresult called with:", result);
   app.sendLog({ level: "info", data: `Tool result received: isError=${result.isError}` });
 
@@ -90,10 +123,15 @@ app.ontoolresult = (result) => {
   }
 
   app.sendLog({ level: "info", data: `Widget token received: ${widgetToken.substring(0, 20)}...` });
-  showStatus("Opening Airbyte widget...", "success");
+  showStatus("Loading Airbyte widget...", "loading");
 
-  // Use the AirbyteEmbeddedWidget library (loaded from CDN) instead of manual iframe creation
   try {
+    // Load the AirbyteEmbeddedWidget from CDN dynamically
+    // (static <script src=""> tags don't work in srcdoc iframes)
+    await loadAirbyteWidget();
+
+    showStatus("Opening Airbyte widget...", "success");
+
     // Destroy existing widget instance if any
     if (widgetInstance) {
       widgetInstance.destroy?.();

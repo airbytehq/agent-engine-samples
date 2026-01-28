@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
   <title>Airbyte Widget</title>
-  <script src="https://cdn.jsdelivr.net/npm/@airbyte-embedded/airbyte-embedded-widget@0.4.2"></script>
+  <!-- AirbyteEmbeddedWidget is loaded dynamically from CDN in mcp-app.ts because static
+       <script src=""> tags don't work in srcdoc iframes -->
 </head>
 <body>
   <div class="container">
