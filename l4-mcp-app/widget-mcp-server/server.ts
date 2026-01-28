@@ -255,7 +255,22 @@ function createServer(): McpServer {
     async (): Promise<ReadResourceResult> => {
       return {
         contents: [
-          { uri: resourceUri, mimeType: RESOURCE_MIME_TYPE, text: APP_HTML },
+          {
+            uri: resourceUri,
+            mimeType: RESOURCE_MIME_TYPE,
+            text: APP_HTML,
+            // CSP metadata to allow loading external scripts for the Airbyte widget
+            // Uses the McpUiResourceCsp format expected by the sandbox
+            _meta: {
+              ui: {
+                csp: {
+                  resourceDomains: ["https://cdn.jsdelivr.net", "https://esm.sh"],
+                  connectDomains: ["https://api.airbyte.ai", "https://cdn.jsdelivr.net", "https://esm.sh"],
+                  frameDomains: ["https://cloud.airbyte.com"],
+                },
+              },
+            },
+          },
         ],
       };
     },
@@ -267,11 +282,11 @@ function createServer(): McpServer {
 const MCP_PORT = parseInt(process.env.MCP_PORT || "3001", 10);
 
 async function main() {
-  const transport = process.argv.includes("--stdio") ? "stdio" : "http";
-  const server = createServer();
+  const transportMode = process.argv.includes("--stdio") ? "stdio" : "http";
 
-  if (transport === "stdio") {
+  if (transportMode === "stdio") {
     console.log("[MCP Server] Starting in stdio mode...");
+    const server = createServer();
     await server.connect(new StdioServerTransport());
   } else {
     console.log(`[MCP Server] Starting HTTP server on port ${MCP_PORT}...`);
@@ -280,34 +295,70 @@ async function main() {
     app.use(cors());
     app.use(express.json());
 
-    // Store transports by session ID for stateful connections
-    const transports = new Map<string, StreamableHTTPServerTransport>();
+    // Handle POST requests - stateless mode (new server per request)
+    // This is the recommended pattern from the MCP SDK for HTTP servers
+    app.post("/mcp", async (req, res) => {
+      console.log(`[MCP Server] POST /mcp received, body:`, JSON.stringify(req.body));
 
-    // MCP endpoint
-    app.all("/mcp", async (req, res) => {
-      // Get or create session ID
-      const sessionId = req.headers["mcp-session-id"] as string || "default";
-
-      let httpTransport = transports.get(sessionId);
-
-      if (!httpTransport) {
-        // Create new transport for this session
-        httpTransport = new StreamableHTTPServerTransport({
-          sessionIdGenerator: () => sessionId,
+      try {
+        // Create a new server and transport for each request (stateless mode)
+        const server = createServer();
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: undefined, // Stateless mode - no session management
         });
-        transports.set(sessionId, httpTransport);
 
-        // Connect the server to this transport
-        await server.connect(httpTransport);
-        console.log(`[MCP Server] New session connected: ${sessionId}`);
+        await server.connect(transport);
+        await transport.handleRequest(req, res, req.body);
+
+        // Clean up after request completes
+        res.on("close", () => {
+          console.log("[MCP Server] Request closed, cleaning up");
+          transport.close();
+          server.close();
+        });
+      } catch (error) {
+        console.error("[MCP Server] Error handling POST:", error);
+        if (!res.headersSent) {
+          res.status(500).json({
+            jsonrpc: "2.0",
+            error: {
+              code: -32603,
+              message: "Internal server error",
+            },
+            id: null,
+          });
+        }
       }
+    });
 
-      // Handle the request
-      await httpTransport.handleRequest(req, res);
+    // Handle GET requests - not supported in stateless mode
+    app.get("/mcp", async (req, res) => {
+      console.log(`[MCP Server] GET /mcp received - not supported in stateless mode`);
+      res.status(405).json({
+        jsonrpc: "2.0",
+        error: {
+          code: -32000,
+          message: "Method not allowed in stateless mode",
+        },
+        id: null,
+      });
+    });
+
+    // Handle DELETE requests - not supported in stateless mode
+    app.delete("/mcp", async (req, res) => {
+      console.log(`[MCP Server] DELETE /mcp received - not supported in stateless mode`);
+      res.status(405).json({
+        jsonrpc: "2.0",
+        error: {
+          code: -32000,
+          message: "Method not allowed in stateless mode",
+        },
+        id: null,
+      });
     });
 
     app.listen(MCP_PORT, () => {
-      console.log(`[MCP Server] HTTP server listening at http://localhost:${MCP_PORT}/mcp`);
+      console.log(`[MCP Server] HTTP server listening at http://localhost:${MCP_PORT}/mcp (stateless mode)`);
     });
   }
 }
