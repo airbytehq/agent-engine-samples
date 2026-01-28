@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCP Apps Chat</title>
+  <script type="module">
+    import { UIResourceRenderer } from 'https://esm.sh/@mcp-ui/client@5.17.3';
+    
+    // Register the Web Component
+    if (!customElements.get('ui-resource-renderer')) {
+      customElements.define('ui-resource-renderer', UIResourceRenderer);
+    }
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .header {
+      background: #1a1a2e;
+      color: white;
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .header h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+    
+    .chat-container {
+      flex: 1;
+      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1rem 0;
+    }
+    
+    .message {
+      padding: 1rem;
+      border-radius: 12px;
+      max-width: 80%;
+    }
+    
+    .message.user {
+      background: #1a1a2e;
+      color: white;
+      align-self: flex-end;
+    }
+    
+    .message.assistant {
+      background: white;
+      border: 1px solid #e0e0e0;
+      align-self: flex-start;
+    }
+    
+    .message.error {
+      background: #fee2e2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+    }
+    
+    .mcp-app-container {
+      margin-top: 1rem;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      overflow: hidden;
+      min-height: 400px;
+    }
+    
+    .input-container {
+      display: flex;
+      gap: 0.5rem;
+      padding: 1rem;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .input-container input {
+      flex: 1;
+      padding: 0.75rem 1rem;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 1rem;
+      outline: none;
+    }
+    
+    .input-container input:focus {
+      border-color: #1a1a2e;
+    }
+    
+    .input-container button {
+      padding: 0.75rem 1.5rem;
+      background: #1a1a2e;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .input-container button:hover {
+      background: #2d2d4a;
+    }
+    
+    .input-container button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .examples {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      padding: 0.5rem 0;
+    }
+    
+    .example-btn {
+      padding: 0.5rem 1rem;
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .example-btn:hover {
+      background: #f0f0f0;
+      border-color: #1a1a2e;
+    }
+    
+    .loading {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #666;
+    }
+    
+    .loading::after {
+      content: '';
+      width: 16px;
+      height: 16px;
+      border: 2px solid #e0e0e0;
+      border-top-color: #1a1a2e;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>MCP Apps Chat</h1>
+  </div>
+  
+  <div class="chat-container">
+    <div class="examples">
+      <button class="example-btn" onclick="sendMessage('Add a new connector')">Add a new connector</button>
+      <button class="example-btn" onclick="sendMessage('Help me set up a data integration')">Set up integration</button>
+      <button class="example-btn" onclick="sendMessage('What can you help me with?')">What can you do?</button>
+    </div>
+    
+    <div class="messages" id="messages"></div>
+    
+    <div class="input-container">
+      <input 
+        type="text" 
+        id="messageInput" 
+        placeholder="Type your message..." 
+        onkeypress="if(event.key === 'Enter') sendMessage()"
+      />
+      <button id="sendBtn" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script type="module">
+    const messagesEl = document.getElementById('messages');
+    const inputEl = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+    
+    function addMessage(content, type = 'assistant', toolCalls = []) {
+      const msgEl = document.createElement('div');
+      msgEl.className = `message ${type}`;
+      msgEl.textContent = content;
+      messagesEl.appendChild(msgEl);
+      
+      // Render MCP App UI for tool calls with ui metadata
+      for (const toolCall of toolCalls) {
+        if (toolCall._meta?.ui?.resourceUri) {
+          renderMcpApp(toolCall);
+        }
+      }
+      
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+    
+    async function renderMcpApp(toolCall) {
+      const container = document.createElement('div');
+      container.className = 'mcp-app-container';
+      
+      // Create the UI resource renderer
+      const renderer = document.createElement('ui-resource-renderer');
+      
+      // For MCP Apps, we need to fetch the resource from the MCP server
+      // Since we're using a simplified approach, we'll create a resource object
+      // that the renderer can use
+      const resource = {
+        uri: toolCall._meta.ui.resourceUri,
+        mimeType: 'text/html;profile=mcp-app',
+        // The actual HTML content would be fetched from the MCP server
+        // For now, we'll show a placeholder that indicates the widget should open
+        text: `
+          <html>
+          <body style="font-family: sans-serif; padding: 2rem; text-align: center;">
+            <p>Loading Airbyte Widget...</p>
+            <p style="color: #666; font-size: 0.875rem;">
+              The widget will open in a modal overlay.
+            </p>
+          </body>
+          </html>
+        `
+      };
+      
+      renderer.setAttribute('resource', JSON.stringify(resource));
+      container.appendChild(renderer);
+      messagesEl.appendChild(container);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+    
+    function showLoading() {
+      const loadingEl = document.createElement('div');
+      loadingEl.className = 'message assistant loading';
+      loadingEl.id = 'loading';
+      loadingEl.textContent = 'Thinking';
+      messagesEl.appendChild(loadingEl);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+    
+    function hideLoading() {
+      const loadingEl = document.getElementById('loading');
+      if (loadingEl) loadingEl.remove();
+    }
+    
+    window.sendMessage = async function(text) {
+      const message = text || inputEl.value.trim();
+      if (!message) return;
+      
+      inputEl.value = '';
+      sendBtn.disabled = true;
+      
+      addMessage(message, 'user');
+      showLoading();
+      
+      try {
+        const response = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message })
+        });
+        
+        hideLoading();
+        
+        if (!response.ok) {
+          const error = await response.json();
+          addMessage(error.error || 'Something went wrong', 'error');
+          return;
+        }
+        
+        const data = await response.json();
+        addMessage(data.response, 'assistant', data.tool_calls || []);
+        
+      } catch (error) {
+        hideLoading();
+        addMessage(`Error: ${error.message}`, 'error');
+      } finally {
+        sendBtn.disabled = false;
+        inputEl.focus();
+      }
+    };
+    
+    // Focus input on load
+    inputEl.focus();
+  </script>
+</body>
+</html>

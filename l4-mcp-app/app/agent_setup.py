@@ -1,20 +1,17 @@
 """
 Agent Setup Module
 
-Handles agent initialization and tool registration.
+Handles agent initialization with MCP server integration for the MCP Apps paradigm.
 """
 
 import os
 from pathlib import Path
-from typing import Union
 from dotenv import load_dotenv
 from pydantic_ai import Agent
 from pydantic_ai.models.anthropic import AnthropicModel
 from pydantic_ai.providers.anthropic import AnthropicProvider
 from pydantic_ai.mcp import load_mcp_servers
-from langsmith import traceable
 
-# Load environment variables
 load_dotenv()
 
 ANTHROPIC_API_KEY = os.getenv("AC_ANTHROPIC_API_KEY")
@@ -28,22 +25,22 @@ def _load_system_prompt() -> str:
 
 def create_agent() -> Agent:
     """
-    Create and configure the Pydantic AI agent.
+    Create and configure the Pydantic AI agent with MCP server tools.
 
     Returns:
-        Agent: Configured Pydantic AI agent
+        Agent: Configured Pydantic AI agent with MCP tools loaded
     """
     provider = AnthropicProvider(api_key=ANTHROPIC_API_KEY)
     model = AnthropicModel("claude-sonnet-4-5-20250929", provider=provider)
     system_prompt = _load_system_prompt()
 
-    # Load MCP servers from configuration with graceful fallback
-    mcp_servers = load_mcp_servers('.mcp.json')
+    mcp_config_path = Path(__file__).parent.parent / ".mcp.json"
+    mcp_servers = load_mcp_servers(str(mcp_config_path))
 
     agent = Agent(
         model=model,
         system_prompt=system_prompt,
-        toolsets=mcp_servers,  # Add MCP server tools
+        toolsets=mcp_servers,
         retries=10
     )
 
