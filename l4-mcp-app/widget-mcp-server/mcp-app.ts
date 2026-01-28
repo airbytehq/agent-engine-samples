@@ -16,7 +16,7 @@ style.textContent = `
   html, body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     width: 100%;
-    min-height: 100vh;
+    min-height: 600px;
     height: 100vh;
     overflow: visible;
   }
