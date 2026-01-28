@@ -15,9 +15,17 @@ import type { CallToolResult, ReadResourceResult } from "@modelcontextprotocol/s
 import { z } from "zod";
 import express from "express";
 import cors from "cors";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const AIRBYTE_API_BASE = "https://api.airbyte.ai/api/v1";
-const AIRBYTE_WIDGET_CDN = "https://cdn.jsdelivr.net/npm/@airbyte-embedded/airbyte-embedded-widget@0.4.2";
+
+// Read the bundled MCP App HTML at startup
+const APP_HTML = readFileSync(join(__dirname, "mcp-app.html"), "utf-8");
 
 async function fetchApplicationToken(): Promise<string> {
   const clientId = process.env.AC_AIRBYTE_CLIENT_ID;
@@ -82,128 +90,6 @@ async function getWidgetToken(): Promise<string> {
   return fetchWidgetToken(appToken);
 }
 
-const APP_HTML = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="color-scheme" content="light dark">
-  <title>Airbyte Widget</title>
-  <script src="${AIRBYTE_WIDGET_CDN}"></script>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--color-background-primary, #ffffff);
-      color: var(--color-text-primary, #1a1a1a);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .container { text-align: center; padding: 2rem; }
-    .loading { color: var(--color-text-secondary, #666); }
-    .error { color: #dc2626; }
-    .success { color: #16a34a; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <p id="status" class="loading">Initializing widget...</p>
-  </div>
-  <script type="module">
-    import { App, applyDocumentTheme, applyHostStyleVariables } from "https://esm.sh/@modelcontextprotocol/ext-apps@1.0.1";
-
-    const statusEl = document.getElementById("status");
-    let widgetInstance = null;
-
-    function showStatus(message, type = "loading") {
-      statusEl.textContent = message;
-      statusEl.className = type;
-    }
-
-    const app = new App({ name: "Airbyte Widget", version: "1.0.0" });
-
-    app.onhostcontextchanged = (ctx) => {
-      if (ctx.theme) applyDocumentTheme(ctx.theme);
-      if (ctx.styles?.variables) applyHostStyleVariables(ctx.styles.variables);
-      if (ctx.safeAreaInsets) {
-        document.body.style.padding =
-          \`\${ctx.safeAreaInsets.top}px \${ctx.safeAreaInsets.right}px \${ctx.safeAreaInsets.bottom}px \${ctx.safeAreaInsets.left}px\`;
-      }
-    };
-
-    app.ontoolinput = () => {
-      showStatus("Fetching widget token...", "loading");
-    };
-
-    app.ontoolresult = (result) => {
-      if (result.isError) {
-        const errorText = result.content?.find(c => c.type === "text")?.text ?? "Unknown error";
-        showStatus(errorText, "error");
-        return;
-      }
-
-      const { widgetToken } = (result.structuredContent || {});
-
-      if (!widgetToken) {
-        showStatus("No widget token received", "error");
-        return;
-      }
-
-      showStatus("Opening Airbyte widget...", "success");
-
-      try {
-        if (widgetInstance) {
-          widgetInstance.destroy?.();
-        }
-
-        widgetInstance = new AirbyteEmbeddedWidget({
-          token: widgetToken,
-          onEvent: (event) => {
-            console.log("Airbyte widget event:", event);
-            app.sendLog({ level: "info", data: \`Widget event: \${JSON.stringify(event)}\` });
-          }
-        });
-
-        widgetInstance.open();
-        showStatus("Widget opened! Configure your integration.", "success");
-      } catch (error) {
-        showStatus(\`Failed to initialize widget: \${error.message}\`, "error");
-      }
-    };
-
-    app.ontoolcancelled = (params) => {
-      showStatus(\`Cancelled: \${params.reason || "Unknown reason"}\`, "error");
-    };
-
-    app.onerror = (error) => {
-      showStatus(\`Error: \${error.message}\`, "error");
-    };
-
-    app.onteardown = async () => {
-      if (widgetInstance) {
-        try {
-          widgetInstance.destroy?.();
-        } catch (e) {
-          console.warn("Error destroying widget:", e);
-        }
-        widgetInstance = null;
-      }
-      return {};
-    };
-
-    app.connect().then(() => {
-      const ctx = app.getHostContext();
-      if (ctx) app.onhostcontextchanged(ctx);
-      showStatus("Ready. Waiting for tool call...", "loading");
-    }).catch((error) => {
-      showStatus(\`Connection failed: \${error.message}\`, "error");
-    });
-  </script>
-</body>
-</html>`;
-
 function createServer(): McpServer {
   const server = new McpServer({
     name: "Airbyte Widget MCP App",
@@ -261,12 +147,13 @@ function createServer(): McpServer {
             text: APP_HTML,
             // CSP metadata to allow loading external scripts for the Airbyte widget
             // Uses the McpUiResourceCsp format expected by the sandbox
+            // Note: ext-apps SDK is bundled, so we only need cdn.jsdelivr.net for the Airbyte widget
             _meta: {
               ui: {
                 csp: {
-                  resourceDomains: ["https://cdn.jsdelivr.net", "https://esm.sh"],
-                  connectDomains: ["https://api.airbyte.ai", "https://cdn.jsdelivr.net", "https://esm.sh"],
-                  frameDomains: ["https://cloud.airbyte.com"],
+                  resourceDomains: ["https://cdn.jsdelivr.net"],
+                  connectDomains: ["https://api.airbyte.ai", "https://cdn.jsdelivr.net"],
+                  frameDomains: ["https://cloud.airbyte.com", "https://app.airbyte.ai"],
                 },
               },
             },
